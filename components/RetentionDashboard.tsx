@@ -93,6 +93,29 @@ function labelForMappingKey(key: string) {
     .replace(/^./, (match) => match.toUpperCase());
 }
 
+function niceStepForAxis(rough: number): number {
+  if (!Number.isFinite(rough) || rough <= 0) return 1000;
+  const exp = Math.floor(Math.log10(rough));
+  const base = 10 ** exp;
+  const f = rough / base;
+  const n = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
+  return n * base;
+}
+
+/** Strictly ascending ticks so the Y-axis stays a proper numeric scale (avoids Recharts mis-ordering). */
+function revenueYAxisTicks(axisMax: number, divisions = 5): number[] {
+  if (!Number.isFinite(axisMax) || axisMax <= 0) return [0, 5000, 10000];
+  const step = niceStepForAxis(axisMax / Math.max(2, divisions - 1));
+  const ticks: number[] = [0];
+  for (let v = step; v < axisMax; v += step) {
+    ticks.push(Math.round(v));
+  }
+  const cap = Math.ceil(axisMax / step) * step;
+  const last = ticks[ticks.length - 1] ?? 0;
+  if (cap > last) ticks.push(cap);
+  return ticks;
+}
+
 export function RetentionDashboard() {
   const [orders, setOrders] = useState<Order[]>(() => generateDemoOrders(demoCustomerCount));
   const [dataLabel, setDataLabel] = useState("Luma Skin demo data");
@@ -195,6 +218,8 @@ export function RetentionDashboard() {
     }
     return max * 1.08 + 800;
   }, [simRevenueCurve, simDepthScenario.modeledYearOneRevenue]);
+  const simRevenueYTicks = useMemo(() => revenueYAxisTicks(simCurveYMax, 6), [simCurveYMax]);
+  const simRevenueYDomainMax = simRevenueYTicks[simRevenueYTicks.length - 1] ?? simCurveYMax;
   const cohortCurveChartData = useMemo(
     () =>
       simRevenueCurve.map((p) => ({
@@ -768,8 +793,10 @@ Assumption: uplift is an estimated opportunity, not guaranteed revenue. Later pu
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                   <YAxis
-                    domain={[0, simCurveYMax]}
+                    domain={[0, simRevenueYDomainMax]}
                     tickFormatter={(v) => formatCurrency(Number(v))}
+                    ticks={simRevenueYTicks}
+                    type="number"
                     width={56}
                   />
                   <Tooltip
