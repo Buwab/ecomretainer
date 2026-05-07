@@ -628,6 +628,17 @@ export function formatCurrency(value: number) {
   }).format(value);
 }
 
+/** Short axis labels (e.g. €150k) so ticks are not clipped in narrow chart gutters. */
+export function formatCurrencyAxisTick(value: number): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  if (n === 0) return "€0";
+  const abs = Math.abs(n);
+  if (abs < 1000) return `€${Math.round(n)}`;
+  if (abs < 1_000_000) return `€${Math.round(n / 1000)}k`;
+  return `€${(n / 1_000_000).toFixed(1)}M`;
+}
+
 export function formatPercent(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "percent",

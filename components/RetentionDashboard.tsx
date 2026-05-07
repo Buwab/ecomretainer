@@ -32,6 +32,7 @@ import {
   cohortProfilesForMonth,
   DATA_AS_OF,
   formatCurrency,
+  formatCurrencyAxisTick,
   formatPercent,
   getMatureProfiles,
   isCohortEligibleForPastMonthsView,
@@ -789,24 +790,29 @@ Assumption: uplift is an estimated opportunity, not guaranteed revenue. Later pu
               </div>
 
               <ResponsiveContainer width="100%" height={260}>
-                <LineChart data={cohortCurveChartData} margin={{ top: 8, right: 12, left: 4, bottom: 4 }}>
+                <LineChart data={cohortCurveChartData} margin={{ top: 8, right: 12, left: 6, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                   <YAxis
                     domain={[0, simRevenueYDomainMax]}
-                    tickFormatter={(v) => formatCurrency(Number(v))}
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(v) => formatCurrencyAxisTick(Number(v))}
                     ticks={simRevenueYTicks}
                     type="number"
-                    width={56}
+                    width={48}
                   />
                   <Tooltip
                     contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0" }}
-                    formatter={(value, name) => [
-                      value == null ? "—" : formatCurrency(Number(value)),
-                      name === "observedRevenue"
-                        ? "Observed cumulative Y1 revenue"
-                        : "Modeled Y1 total (sliders)",
-                    ]}
+                    formatter={(value, name) => {
+                      const isObserved =
+                        name === "observedRevenue" ||
+                        name === "Observed cumulative Y1 revenue" ||
+                        (typeof name === "string" && name.includes("Observed"));
+                      return [
+                        value == null ? "—" : formatCurrency(Number(value)),
+                        isObserved ? "Observed cumulative Y1 revenue" : "Modeled Y1 total (sliders)",
+                      ];
+                    }}
                   />
                   <Legend />
                   <Line
